@@ -94,11 +94,29 @@ export interface Briefing {
   deepDive: { title: string; summary: string };
 }
 
+const inFlightMorningRequests = new Map<string, Promise<unknown>>();
+
 async function callMorningAI<T>(payload: Record<string, unknown>): Promise<T> {
-  const { data, error } = await supabase.functions.invoke("morning-ai", { body: payload });
-  if (error) throw error;
-  if (data?.error) throw new Error(data.error);
-  return data as T;
+  const key = JSON.stringify(payload);
+
+  if (inFlightMorningRequests.has(key)) {
+    return inFlightMorningRequests.get(key) as Promise<T>;
+  }
+
+  const request = (async () => {
+    const { data, error } = await supabase.functions.invoke("morning-ai", { body: payload });
+    if (error) throw error;
+    if (data?.error) throw new Error(data.error);
+    return data as T;
+  })();
+
+  inFlightMorningRequests.set(key, request);
+
+  try {
+    return await request;
+  } finally {
+    inFlightMorningRequests.delete(key);
+  }
 }
 
 export async function generateStudyReview(topic: string, material?: string): Promise<StudyReview> {
