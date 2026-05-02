@@ -79,7 +79,7 @@ function Routine() {
   /* ----- Step 1: Wake-up ----- */
   if (step === 1) {
     return (
-      <StepShell step={1} total={TOTAL} eyebrow="Step 1 · Wake-up" title="Get out of bed.">
+      <StepShell step={1} total={TOTAL} eyebrow="Step 1 · Wake-up" title="Get out of bed." onBack={back}>
         <div className="flex-1 flex flex-col items-center justify-center text-center">
           <div className="w-24 h-24 rounded-full bg-[var(--color-sun)]/30 flex items-center justify-center mb-8" style={{ boxShadow: "var(--shadow-glow)" }}>
             <Sunrise className="w-12 h-12 text-primary" />
