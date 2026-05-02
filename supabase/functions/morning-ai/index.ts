@@ -24,30 +24,45 @@ async function callAI(messages: any[], tool: any) {
   const key = Deno.env.get("LOVABLE_API_KEY");
   if (!key) throw new Error("LOVABLE_API_KEY not configured");
 
-  const res = await fetch(GATEWAY_URL, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${key}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: MODEL,
-      messages,
-      tools: [tool],
-      tool_choice: { type: "function", function: { name: tool.function.name } },
-    }),
-  });
+  const maxRetries = 4;
+  let lastErr: unknown = null;
 
-  if (res.status === 429) throw new Response(JSON.stringify({ error: "Rate limit reached. Please wait a moment." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-  if (res.status === 402) throw new Response(JSON.stringify({ error: "AI credits exhausted. Add funds in Workspace settings." }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-  if (!res.ok) {
-    const t = await res.text();
-    throw new Error(`AI gateway ${res.status}: ${t}`);
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    const res = await fetch(GATEWAY_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${key}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        messages,
+        tools: [tool],
+        tool_choice: { type: "function", function: { name: tool.function.name } },
+      }),
+    });
+
+    if (res.status === 429) {
+      // Exponential backoff: 500ms, 1s, 2s, 4s
+      const delay = 500 * Math.pow(2, attempt);
+      console.warn(`429 from gateway, retry ${attempt + 1}/${maxRetries} in ${delay}ms`);
+      await new Promise((r) => setTimeout(r, delay));
+      lastErr = new Response(JSON.stringify({ error: "Rate limit reached. Please wait a moment." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      continue;
+    }
+    if (res.status === 402) throw new Response(JSON.stringify({ error: "AI credits exhausted. Add funds in Workspace settings." }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    if (!res.ok) {
+      const t = await res.text();
+      throw new Error(`AI gateway ${res.status}: ${t}`);
+    }
+    const data = await res.json();
+    const args = data.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
+    if (!args) throw new Error("No tool call in AI response");
+    return JSON.parse(args);
   }
-  const data = await res.json();
-  const args = data.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
-  if (!args) throw new Error("No tool call in AI response");
-  return JSON.parse(args);
+
+  // Exhausted retries — surface the 429 to caller
+  throw lastErr ?? new Error("Rate limited");
 }
 
 Deno.serve(async (req) => {
