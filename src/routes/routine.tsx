@@ -68,6 +68,13 @@ function Routine() {
   if (!setup) return null;
 
   const next = () => setStep((s) => Math.min(s + 1, TOTAL + 1));
+  const back = () => {
+    if (step <= 1) {
+      navigate({ to: "/setup" });
+      return;
+    }
+    setStep((s) => Math.max(s - 1, 1));
+  };
 
   /* ----- Step 1: Wake-up ----- */
   if (step === 1) {
