@@ -182,7 +182,7 @@ function Routine() {
   /* ----- Step 4: Breakfast ----- */
   if (step === 4) {
     return (
-      <StepShell step={4} total={TOTAL} eyebrow="Step 4 · Fuel" title="Pick your breakfast.">
+      <StepShell step={4} total={TOTAL} eyebrow="Step 4 · Fuel" title="Pick your breakfast." onBack={back}>
         <div className="space-y-3 flex-1">
           {breakfast.map((b, i) => (
             <div key={i} className="rounded-3xl bg-card border border-border p-5 shadow-[var(--shadow-soft)]">
