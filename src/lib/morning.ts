@@ -101,9 +101,10 @@ async function callMorningAI<T>(payload: Record<string, unknown>): Promise<T> {
   return data as T;
 }
 
-export async function generateStudyReview(topic: string): Promise<StudyReview> {
+export async function generateStudyReview(topic: string, material?: string): Promise<StudyReview> {
   const t = topic.trim();
-  if (!t) {
+  const m = (material || "").trim();
+  if (!t && !m) {
     return {
       questions: [
         "What is the core concept you studied yesterday?",
@@ -114,16 +115,17 @@ export async function generateStudyReview(topic: string): Promise<StudyReview> {
     };
   }
   try {
-    return await callMorningAI<StudyReview>({ action: "study_questions", studyTopic: t });
+    return await callMorningAI<StudyReview>({ action: "study_questions", studyTopic: t, studyMaterial: m });
   } catch (e) {
     console.error("study_questions failed, using fallback", e);
+    const label = t || "yesterday's material";
     return {
       questions: [
-        `What is the core concept behind ${t}?`,
-        `Name one example or use case where ${t} applies.`,
-        `What's one common mistake or misconception about ${t}?`,
+        `What is the core concept behind ${label}?`,
+        `Name one example or use case where ${label} applies.`,
+        `What's one common mistake or misconception about ${label}?`,
       ],
-      explainPrompt: `In 2–3 sentences, explain ${t} as if teaching a curious friend.`,
+      explainPrompt: `In 2–3 sentences, explain ${label} as if teaching a curious friend.`,
     };
   }
 }
