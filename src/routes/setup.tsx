@@ -80,6 +80,7 @@ function Setup() {
                 {FITNESS_LABELS[g]}
               </button>
             ))}
+          </div>
         </div>
 
         <div>
