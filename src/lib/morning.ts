@@ -1,3 +1,5 @@
+import { supabase } from "@/integrations/supabase/client";
+
 export type FitnessGoal = "fat_loss" | "muscle_gain" | "maintain" | "low_energy";
 export type Energy = "good" | "okay" | "tired";
 
@@ -5,6 +7,7 @@ export interface RoutineSetup {
   wakeTime: string;
   studyTopic: string;
   fitnessGoal: FitnessGoal;
+  interests: string;
 }
 
 export const STORAGE_KEY = "morning-os-setup";
@@ -13,7 +16,9 @@ export function loadSetup(): RoutineSetup | null {
   if (typeof window === "undefined") return null;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : null;
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return { interests: "", ...parsed };
   } catch {
     return null;
   }
@@ -23,7 +28,7 @@ export function saveSetup(s: RoutineSetup) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
 }
 
-/* ---------- Generators (mock AI) ---------- */
+/* ---------- Local generators (no AI needed) ---------- */
 
 export function generatePhysicalActivity(energy: Energy, goal: FitnessGoal) {
   if (energy === "tired") {
@@ -54,18 +59,6 @@ export function generatePhysicalActivity(energy: Energy, goal: FitnessGoal) {
   };
 }
 
-export function generateStudyReview(topic: string) {
-  const t = topic.trim() || "yesterday's material";
-  return {
-    questions: [
-      `What is the core concept behind ${t}?`,
-      `Name one example or use case where ${t} applies.`,
-      `What's one common mistake or misconception about ${t}?`,
-    ],
-    explainPrompt: `In 2–3 sentences, explain ${t} as if teaching a curious friend.`,
-  };
-}
-
 export function generateBreakfast(goal: FitnessGoal) {
   const map: Record<FitnessGoal, { title: string; items: string[]; time: string }[]> = {
     fat_loss: [
@@ -88,30 +81,85 @@ export function generateBreakfast(goal: FitnessGoal) {
   return map[goal];
 }
 
-export function generateBriefing() {
-  return {
-    news: [
-      { title: "Markets edge higher on tech earnings", summary: "Major indices closed up as cloud and AI firms beat expectations." },
-      { title: "New language model benchmark released", summary: "A consortium published an open eval covering reasoning, code, and math." },
-      { title: "EU finalizes AI safety framework", summary: "Regulators agreed on disclosure rules for general-purpose models." },
-    ],
-    deepDive: {
-      title: "Why spaced repetition works",
-      summary: "Reviewing material right before you'd forget it strengthens memory more than re-reading. Even 3 minutes today beats 30 next week.",
-    },
-  };
+/* ---------- AI generators (via edge function) ---------- */
+
+export interface StudyReview {
+  questions: string[];
+  explainPrompt: string;
 }
 
-const FOCUSES = [
-  "Finish the hardest task before noon.",
-  "Protect 90 minutes of deep work — no phone.",
-  "Review notes from your weakest subject.",
-  "Send the message you've been putting off.",
-  "Move your body for 20 minutes.",
-];
+export interface Briefing {
+  news: { title: string; summary: string }[];
+  deepDive: { title: string; summary: string };
+}
 
-export function generateFocus() {
-  return FOCUSES[Math.floor(Math.random() * FOCUSES.length)];
+async function callMorningAI<T>(payload: Record<string, unknown>): Promise<T> {
+  const { data, error } = await supabase.functions.invoke("morning-ai", { body: payload });
+  if (error) throw error;
+  if (data?.error) throw new Error(data.error);
+  return data as T;
+}
+
+export async function generateStudyReview(topic: string): Promise<StudyReview> {
+  const t = topic.trim();
+  if (!t) {
+    return {
+      questions: [
+        "What is the core concept you studied yesterday?",
+        "Where would you apply it in real life?",
+        "What's a common mistake people make with it?",
+      ],
+      explainPrompt: "In 2–3 sentences, explain yesterday's topic to a curious friend.",
+    };
+  }
+  try {
+    return await callMorningAI<StudyReview>({ action: "study_questions", studyTopic: t });
+  } catch (e) {
+    console.error("study_questions failed, using fallback", e);
+    return {
+      questions: [
+        `What is the core concept behind ${t}?`,
+        `Name one example or use case where ${t} applies.`,
+        `What's one common mistake or misconception about ${t}?`,
+      ],
+      explainPrompt: `In 2–3 sentences, explain ${t} as if teaching a curious friend.`,
+    };
+  }
+}
+
+export async function generateBriefing(interests: string): Promise<Briefing> {
+  try {
+    return await callMorningAI<Briefing>({ action: "briefing", interests });
+  } catch (e) {
+    console.error("briefing failed, using fallback", e);
+    return {
+      news: [
+        { title: "Briefing unavailable", summary: "We couldn't load fresh headlines this morning. Try again in a moment." },
+        { title: "Tip: stay informed lightly", summary: "A 3-minute read beats 30 minutes of doomscrolling." },
+        { title: "Today's mindset", summary: "Focus on inputs you can act on, not noise." },
+      ],
+      deepDive: {
+        title: "Why spaced repetition works",
+        summary: "Reviewing right before you'd forget strengthens memory more than re-reading. 3 minutes today beats 30 next week.",
+      },
+    };
+  }
+}
+
+export async function generateFocus(setup: RoutineSetup): Promise<string> {
+  try {
+    const { focus } = await callMorningAI<{ focus: string }>({
+      action: "focus",
+      studyTopic: setup.studyTopic,
+      fitnessGoal: setup.fitnessGoal,
+      interests: setup.interests,
+      dayOfWeek: new Date().toLocaleDateString("en-US", { weekday: "long" }),
+    });
+    return focus;
+  } catch (e) {
+    console.error("focus failed, using fallback", e);
+    return "Finish the hardest task before noon.";
+  }
 }
 
 export const FITNESS_LABELS: Record<FitnessGoal, string> = {

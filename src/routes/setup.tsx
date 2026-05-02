@@ -21,6 +21,7 @@ function Setup() {
   const [wakeTime, setWakeTime] = useState("07:00");
   const [studyTopic, setStudyTopic] = useState("");
   const [fitnessGoal, setFitnessGoal] = useState<FitnessGoal>("maintain");
+  const [interests, setInterests] = useState("");
 
   useEffect(() => {
     const s = loadSetup();
@@ -28,11 +29,12 @@ function Setup() {
       setWakeTime(s.wakeTime);
       setStudyTopic(s.studyTopic);
       setFitnessGoal(s.fitnessGoal);
+      setInterests(s.interests || "");
     }
   }, []);
 
   const submit = () => {
-    saveSetup({ wakeTime, studyTopic, fitnessGoal });
+    saveSetup({ wakeTime, studyTopic, fitnessGoal, interests });
     navigate({ to: "/routine" });
   };
 
@@ -79,6 +81,19 @@ function Setup() {
               </button>
             ))}
           </div>
+        </div>
+
+        <div>
+          <Label htmlFor="interests" className="mb-2 block">What topics do you care about?</Label>
+          <Textarea
+            id="interests"
+            placeholder="e.g. AI research, climate tech, basketball, philosophy"
+            value={interests}
+            onChange={(e) => setInterests(e.target.value)}
+            className="rounded-xl resize-none"
+            rows={2}
+          />
+          <p className="text-xs text-muted-foreground mt-2">Used for your morning briefing.</p>
         </div>
       </div>
 
