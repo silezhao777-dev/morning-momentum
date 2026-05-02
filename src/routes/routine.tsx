@@ -49,6 +49,7 @@ function Routine() {
   const [briefing, setBriefing] = useState<Briefing | null>(null);
   const [focus, setFocus] = useState<string | null>(null);
   const startedRef = useRef(false);
+  const requestedRef = useRef({ review: false, briefing: false, focus: false });
 
   useEffect(() => {
     if (startedRef.current) return; // guard StrictMode double-invoke
@@ -59,11 +60,32 @@ function Routine() {
       return;
     }
     setSetup(s);
-    // Kick off all AI calls in parallel as soon as the routine loads.
-    generateStudyReview(s.studyTopic, s.studyMaterial).then(setReview).catch(console.error);
-    generateBriefing(s.interests).then(setBriefing).catch(console.error);
-    generateFocus(s).then(setFocus).catch(console.error);
   }, [navigate]);
+
+  useEffect(() => {
+    if (!setup) return;
+
+    if (step >= 3 && !review && !requestedRef.current.review) {
+      requestedRef.current.review = true;
+      generateStudyReview(setup.studyTopic, setup.studyMaterial)
+        .then(setReview)
+        .catch(console.error);
+    }
+
+    if (step >= 5 && !briefing && !requestedRef.current.briefing) {
+      requestedRef.current.briefing = true;
+      generateBriefing(setup.interests)
+        .then(setBriefing)
+        .catch(console.error);
+    }
+
+    if (step >= 6 && !focus && !requestedRef.current.focus) {
+      requestedRef.current.focus = true;
+      generateFocus(setup)
+        .then(setFocus)
+        .catch(console.error);
+    }
+  }, [briefing, focus, review, setup, step]);
 
   const breakfast = setup ? generateBreakfast(setup.fitnessGoal) : [];
   const activity = setup && energy ? generatePhysicalActivity(energy, setup.fitnessGoal) : null;
