@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { ArrowRight, Check, Coffee, Dumbbell, Newspaper, BookOpen, Sparkles, Sunrise, Loader2 } from "lucide-react";
+import { ArrowRight, Check, Coffee, Dumbbell, Newspaper, BookOpen, Sparkles, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { StepShell } from "@/components/StepShell";
@@ -21,13 +21,13 @@ export const Route = createFileRoute("/routine")({
   head: () => ({
     meta: [
       { title: "This morning — Morning OS" },
-      { name: "description", content: "Your guided morning routine: wake, move, review, eat, brief, focus." },
+      { name: "description", content: "Your guided morning routine: move, review, fuel, brief, and focus." },
     ],
   }),
   component: Routine,
 });
 
-const TOTAL = 6;
+const TOTAL = 5;
 
 function Loading({ label }: { label: string }) {
   return (
@@ -65,21 +65,21 @@ function Routine() {
   useEffect(() => {
     if (!setup) return;
 
-    if (step >= 3 && !review && !requestedRef.current.review) {
+    if (step >= 2 && !review && !requestedRef.current.review) {
       requestedRef.current.review = true;
       generateStudyReview(setup.studyTopic, setup.studyMaterial)
         .then(setReview)
         .catch(console.error);
     }
 
-    if (step >= 5 && !briefing && !requestedRef.current.briefing) {
+    if (step >= 4 && !briefing && !requestedRef.current.briefing) {
       requestedRef.current.briefing = true;
       generateBriefing(setup.interests)
         .then(setBriefing)
         .catch(console.error);
     }
 
-    if (step >= 6 && !focus && !requestedRef.current.focus) {
+    if (step >= 5 && !focus && !requestedRef.current.focus) {
       requestedRef.current.focus = true;
       generateFocus(setup)
         .then(setFocus)
@@ -101,29 +101,10 @@ function Routine() {
     setStep((s) => Math.max(s - 1, 1));
   };
 
-  /* ----- Step 1: Wake-up ----- */
+  /* ----- Step 1: Physical ----- */
   if (step === 1) {
     return (
-      <StepShell step={1} total={TOTAL} eyebrow="Step 1 · Wake-up" title="Get out of bed." onBack={back}>
-        <div className="flex-1 flex flex-col items-center justify-center text-center">
-          <div className="w-24 h-24 rounded-full bg-[var(--color-sun)]/30 flex items-center justify-center mb-8" style={{ boxShadow: "var(--shadow-glow)" }}>
-            <Sunrise className="w-12 h-12 text-primary" />
-          </div>
-          <p className="text-muted-foreground max-w-xs">
-            Stand up. Open a window. Drink a glass of water. Then tap below.
-          </p>
-        </div>
-        <Button size="lg" className="w-full h-14 rounded-2xl text-base" onClick={next}>
-          I'm up <ArrowRight className="ml-2 w-4 h-4" />
-        </Button>
-      </StepShell>
-    );
-  }
-
-  /* ----- Step 2: Physical ----- */
-  if (step === 2) {
-    return (
-      <StepShell step={2} total={TOTAL} eyebrow="Step 2 · Move" title="How's your energy?" onBack={() => { if (energy) { setEnergy(null); } else { back(); } }}>
+      <StepShell step={1} total={TOTAL} eyebrow="Step 1 · Move" title="How's your energy?" onBack={() => { if (energy) { setEnergy(null); } else { back(); } }}>
         {!energy ? (
           <div className="space-y-3">
             {(["good", "okay", "tired"] as Energy[]).map((e) => (
@@ -156,10 +137,10 @@ function Routine() {
     );
   }
 
-  /* ----- Step 3: Study review ----- */
-  if (step === 3) {
+  /* ----- Step 2: Study review ----- */
+  if (step === 2) {
     return (
-      <StepShell step={3} total={TOTAL} eyebrow="Step 3 · Review" title="Lock in yesterday's learning." onBack={back}>
+      <StepShell step={2} total={TOTAL} eyebrow="Step 2 · Review" title="Lock in yesterday's learning." onBack={back}>
         <div className="space-y-4 flex-1">
           {!review ? (
             <Loading label="Generating your questions..." />
@@ -204,10 +185,10 @@ function Routine() {
     );
   }
 
-  /* ----- Step 4: Breakfast ----- */
-  if (step === 4) {
+  /* ----- Step 3: Breakfast ----- */
+  if (step === 3) {
     return (
-      <StepShell step={4} total={TOTAL} eyebrow="Step 4 · Fuel" title="Pick your breakfast." onBack={back}>
+      <StepShell step={3} total={TOTAL} eyebrow="Step 3 · Fuel" title="Pick your breakfast." onBack={back}>
         <div className="space-y-3 flex-1">
           {breakfast.map((b, i) => (
             <div key={i} className="rounded-3xl bg-card border border-border p-5 shadow-[var(--shadow-soft)]">
@@ -235,10 +216,10 @@ function Routine() {
     );
   }
 
-  /* ----- Step 5: Briefing ----- */
-  if (step === 5) {
+  /* ----- Step 4: Briefing ----- */
+  if (step === 4) {
     return (
-      <StepShell step={5} total={TOTAL} eyebrow="Step 5 · Briefing" title="The world, in 3 minutes." onBack={back}>
+      <StepShell step={4} total={TOTAL} eyebrow="Step 4 · Briefing" title="The world, in 3 minutes." onBack={back}>
         <div className="space-y-3 flex-1">
           {!briefing ? (
             <Loading label="Curating your briefing..." />
@@ -273,10 +254,10 @@ function Routine() {
     );
   }
 
-  /* ----- Step 6: Daily focus ----- */
-  if (step === 6) {
+  /* ----- Step 5: Daily focus ----- */
+  if (step === 5) {
     return (
-      <StepShell step={6} total={TOTAL} eyebrow="Step 6 · Focus" title="Today's priority." onBack={back}>
+      <StepShell step={5} total={TOTAL} eyebrow="Step 5 · Focus" title="Today's priority." onBack={back}>
         <div className="flex-1 flex flex-col justify-center">
           {!focus ? (
             <Loading label="Crafting today's focus..." />
