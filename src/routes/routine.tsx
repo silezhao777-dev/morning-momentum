@@ -213,7 +213,7 @@ function Routine() {
   /* ----- Step 5: Briefing ----- */
   if (step === 5) {
     return (
-      <StepShell step={5} total={TOTAL} eyebrow="Step 5 · Briefing" title="The world, in 3 minutes.">
+      <StepShell step={5} total={TOTAL} eyebrow="Step 5 · Briefing" title="The world, in 3 minutes." onBack={back}>
         <div className="space-y-3 flex-1">
           {!briefing ? (
             <Loading label="Curating your briefing..." />
