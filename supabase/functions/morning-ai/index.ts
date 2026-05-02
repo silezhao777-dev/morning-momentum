@@ -14,6 +14,7 @@ const MODEL = "google/gemini-3-flash-preview";
 interface Body {
   action: "study_questions" | "briefing" | "focus";
   studyTopic?: string;
+  studyMaterial?: string;
   interests?: string;
   fitnessGoal?: string;
   dayOfWeek?: string;
@@ -57,13 +58,17 @@ Deno.serve(async (req) => {
 
     if (body.action === "study_questions") {
       const topic = (body.studyTopic || "").trim();
-      if (!topic) {
-        return new Response(JSON.stringify({ error: "studyTopic required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      const material = (body.studyMaterial || "").trim().slice(0, 12000); // safety cap
+      if (!topic && !material) {
+        return new Response(JSON.stringify({ error: "studyTopic or studyMaterial required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
+      const userPrompt = material
+        ? `The student studied this yesterday${topic ? ` (topic: "${topic}")` : ""}. Below is the material they uploaded — base your questions on its actual content.\n\n--- MATERIAL ---\n${material}\n--- END MATERIAL ---\n\nGenerate exactly 3 active-recall questions (concept, application, common mistake) and one "explain it simply" prompt. Reference specific ideas from the material — no generic questions.`
+        : `The student studied this yesterday: "${topic}".\n\nGenerate exactly 3 active-recall questions (concept, application, common mistake) and one "explain it simply" prompt. Be specific to the topic — no generic questions.`;
       const result = await callAI(
         [
           { role: "system", content: "You are a study coach using active recall and spaced repetition. Generate questions that force the student to retrieve, not just recognize." },
-          { role: "user", content: `The student studied this yesterday: "${topic}".\n\nGenerate exactly 3 active-recall questions (concept, application, common mistake) and one "explain it simply" prompt. Be specific to the topic — no generic questions.` },
+          { role: "user", content: userPrompt },
         ],
         {
           type: "function",
