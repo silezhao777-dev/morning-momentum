@@ -251,7 +251,7 @@ function Routine() {
   /* ----- Step 6: Daily focus ----- */
   if (step === 6) {
     return (
-      <StepShell step={6} total={TOTAL} eyebrow="Step 6 · Focus" title="Today's priority.">
+      <StepShell step={6} total={TOTAL} eyebrow="Step 6 · Focus" title="Today's priority." onBack={back}>
         <div className="flex-1 flex flex-col justify-center">
           {!focus ? (
             <Loading label="Crafting today's focus..." />
