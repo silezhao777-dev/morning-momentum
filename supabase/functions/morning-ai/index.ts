@@ -14,6 +14,7 @@ const MODEL = "google/gemini-3-flash-preview";
 interface Body {
   action: "study_questions" | "briefing" | "focus";
   studyTopic?: string;
+  studyMaterial?: string;
   interests?: string;
   fitnessGoal?: string;
   dayOfWeek?: string;
