@@ -1,11 +1,13 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
-import { ArrowRight, Check, Coffee, Dumbbell, Newspaper, BookOpen, Sparkles, Sunrise } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ArrowRight, Check, Coffee, Dumbbell, Newspaper, BookOpen, Sparkles, Sunrise, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { StepShell } from "@/components/StepShell";
 import {
   Energy,
+  Briefing,
+  StudyReview,
   generateBreakfast,
   generateBriefing,
   generateFocus,
@@ -27,6 +29,15 @@ export const Route = createFileRoute("/routine")({
 
 const TOTAL = 6;
 
+function Loading({ label }: { label: string }) {
+  return (
+    <div className="rounded-3xl bg-card border border-border p-8 flex flex-col items-center justify-center gap-3 shadow-[var(--shadow-soft)]">
+      <Loader2 className="w-5 h-5 text-primary animate-spin" />
+      <p className="text-sm text-muted-foreground">{label}</p>
+    </div>
+  );
+}
+
 function Routine() {
   const navigate = useNavigate();
   const [setup, setSetup] = useState<RoutineSetup | null>(null);
@@ -34,20 +45,25 @@ function Routine() {
   const [energy, setEnergy] = useState<Energy | null>(null);
   const [explanation, setExplanation] = useState("");
 
+  const [review, setReview] = useState<StudyReview | null>(null);
+  const [briefing, setBriefing] = useState<Briefing | null>(null);
+  const [focus, setFocus] = useState<string | null>(null);
+
   useEffect(() => {
     const s = loadSetup();
-    if (!s) navigate({ to: "/setup" });
-    else setSetup(s);
+    if (!s) {
+      navigate({ to: "/setup" });
+      return;
+    }
+    setSetup(s);
+    // Kick off all AI calls in parallel as soon as the routine loads.
+    generateStudyReview(s.studyTopic).then(setReview).catch(console.error);
+    generateBriefing(s.interests).then(setBriefing).catch(console.error);
+    generateFocus(s).then(setFocus).catch(console.error);
   }, [navigate]);
 
-  const review = useMemo(() => setup ? generateStudyReview(setup.studyTopic) : null, [setup]);
-  const breakfast = useMemo(() => setup ? generateBreakfast(setup.fitnessGoal) : [], [setup]);
-  const briefing = useMemo(() => generateBriefing(), []);
-  const focus = useMemo(() => generateFocus(), []);
-  const activity = useMemo(
-    () => (setup && energy ? generatePhysicalActivity(energy, setup.fitnessGoal) : null),
-    [setup, energy]
-  );
+  const breakfast = setup ? generateBreakfast(setup.fitnessGoal) : [];
+  const activity = setup && energy ? generatePhysicalActivity(energy, setup.fitnessGoal) : null;
 
   if (!setup) return null;
 
@@ -109,41 +125,47 @@ function Routine() {
   }
 
   /* ----- Step 3: Study review ----- */
-  if (step === 3 && review) {
+  if (step === 3) {
     return (
       <StepShell step={3} total={TOTAL} eyebrow="Step 3 · Review" title="Lock in yesterday's learning.">
         <div className="space-y-4 flex-1">
-          <div className="rounded-3xl bg-card border border-border p-5 shadow-[var(--shadow-soft)]">
-            <div className="flex items-center gap-2 mb-4">
-              <BookOpen className="w-4 h-4 text-primary" />
-              <p className="text-xs uppercase tracking-wider text-muted-foreground">3 quick questions</p>
-            </div>
-            <ol className="space-y-3">
-              {review.questions.map((q, i) => (
-                <li key={i} className="flex gap-3">
-                  <span className="text-primary font-semibold">{i + 1}.</span>
-                  <span className="text-sm leading-relaxed">{q}</span>
-                </li>
-              ))}
-            </ol>
-          </div>
+          {!review ? (
+            <Loading label="Generating your questions..." />
+          ) : (
+            <>
+              <div className="rounded-3xl bg-card border border-border p-5 shadow-[var(--shadow-soft)]">
+                <div className="flex items-center gap-2 mb-4">
+                  <BookOpen className="w-4 h-4 text-primary" />
+                  <p className="text-xs uppercase tracking-wider text-muted-foreground">3 quick questions</p>
+                </div>
+                <ol className="space-y-3">
+                  {review.questions.map((q: string, i: number) => (
+                    <li key={i} className="flex gap-3">
+                      <span className="text-primary font-semibold">{i + 1}.</span>
+                      <span className="text-sm leading-relaxed">{q}</span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
 
-          <div className="rounded-3xl bg-card border border-border p-5 shadow-[var(--shadow-soft)]">
-            <div className="flex items-center gap-2 mb-3">
-              <Sparkles className="w-4 h-4 text-primary" />
-              <p className="text-xs uppercase tracking-wider text-muted-foreground">Explain in your own words</p>
-            </div>
-            <p className="text-sm mb-3 leading-relaxed">{review.explainPrompt}</p>
-            <Textarea
-              value={explanation}
-              onChange={(e) => setExplanation(e.target.value)}
-              placeholder="Type a couple sentences..."
-              className="rounded-xl resize-none border-border"
-              rows={4}
-            />
-          </div>
+              <div className="rounded-3xl bg-card border border-border p-5 shadow-[var(--shadow-soft)]">
+                <div className="flex items-center gap-2 mb-3">
+                  <Sparkles className="w-4 h-4 text-primary" />
+                  <p className="text-xs uppercase tracking-wider text-muted-foreground">Explain in your own words</p>
+                </div>
+                <p className="text-sm mb-3 leading-relaxed">{review.explainPrompt}</p>
+                <Textarea
+                  value={explanation}
+                  onChange={(e) => setExplanation(e.target.value)}
+                  placeholder="Type a couple sentences..."
+                  className="rounded-xl resize-none border-border"
+                  rows={4}
+                />
+              </div>
+            </>
+          )}
         </div>
-        <Button size="lg" className="w-full h-14 rounded-2xl text-base mt-6" onClick={next}>
+        <Button size="lg" className="w-full h-14 rounded-2xl text-base mt-6" onClick={next} disabled={!review}>
           Continue <ArrowRight className="ml-2 w-4 h-4" />
         </Button>
       </StepShell>
@@ -186,27 +208,33 @@ function Routine() {
     return (
       <StepShell step={5} total={TOTAL} eyebrow="Step 5 · Briefing" title="The world, in 3 minutes.">
         <div className="space-y-3 flex-1">
-          <div className="rounded-3xl bg-card border border-border p-5 shadow-[var(--shadow-soft)]">
-            <div className="flex items-center gap-2 mb-4">
-              <Newspaper className="w-4 h-4 text-primary" />
-              <p className="text-xs uppercase tracking-wider text-muted-foreground">Headlines</p>
-            </div>
-            <div className="space-y-4">
-              {briefing.news.map((n, i) => (
-                <div key={i}>
-                  <h4 className="font-medium text-sm mb-1">{n.title}</h4>
-                  <p className="text-xs text-muted-foreground leading-relaxed">{n.summary}</p>
+          {!briefing ? (
+            <Loading label="Curating your briefing..." />
+          ) : (
+            <>
+              <div className="rounded-3xl bg-card border border-border p-5 shadow-[var(--shadow-soft)]">
+                <div className="flex items-center gap-2 mb-4">
+                  <Newspaper className="w-4 h-4 text-primary" />
+                  <p className="text-xs uppercase tracking-wider text-muted-foreground">Headlines</p>
                 </div>
-              ))}
-            </div>
-          </div>
-          <div className="rounded-3xl bg-accent/40 border border-accent p-5">
-            <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Deep dive</p>
-            <h4 className="font-semibold mb-1.5">{briefing.deepDive.title}</h4>
-            <p className="text-sm text-muted-foreground leading-relaxed">{briefing.deepDive.summary}</p>
-          </div>
+                <div className="space-y-4">
+                  {briefing.news.map((n, i) => (
+                    <div key={i}>
+                      <h4 className="font-medium text-sm mb-1">{n.title}</h4>
+                      <p className="text-xs text-muted-foreground leading-relaxed">{n.summary}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="rounded-3xl bg-accent/40 border border-accent p-5">
+                <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Deep dive</p>
+                <h4 className="font-semibold mb-1.5">{briefing.deepDive.title}</h4>
+                <p className="text-sm text-muted-foreground leading-relaxed">{briefing.deepDive.summary}</p>
+              </div>
+            </>
+          )}
         </div>
-        <Button size="lg" className="w-full h-14 rounded-2xl text-base mt-6" onClick={next}>
+        <Button size="lg" className="w-full h-14 rounded-2xl text-base mt-6" onClick={next} disabled={!briefing}>
           Continue <ArrowRight className="ml-2 w-4 h-4" />
         </Button>
       </StepShell>
@@ -218,13 +246,17 @@ function Routine() {
     return (
       <StepShell step={6} total={TOTAL} eyebrow="Step 6 · Focus" title="Today's priority.">
         <div className="flex-1 flex flex-col justify-center">
-          <div className="rounded-3xl p-8 text-center" style={{ background: "var(--gradient-card)", boxShadow: "var(--shadow-soft)" }}>
-            <Sparkles className="w-6 h-6 text-primary mx-auto mb-5" />
-            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground mb-4">Today's priority</p>
-            <p className="font-display text-2xl leading-snug">{focus}</p>
-          </div>
+          {!focus ? (
+            <Loading label="Crafting today's focus..." />
+          ) : (
+            <div className="rounded-3xl p-8 text-center" style={{ background: "var(--gradient-card)", boxShadow: "var(--shadow-soft)" }}>
+              <Sparkles className="w-6 h-6 text-primary mx-auto mb-5" />
+              <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground mb-4">Today's priority</p>
+              <p className="font-display text-2xl leading-snug">{focus}</p>
+            </div>
+          )}
         </div>
-        <Button size="lg" className="w-full h-14 rounded-2xl text-base mt-6" onClick={next}>
+        <Button size="lg" className="w-full h-14 rounded-2xl text-base mt-6" onClick={next} disabled={!focus}>
           Start the day <ArrowRight className="ml-2 w-4 h-4" />
         </Button>
       </StepShell>

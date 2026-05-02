@@ -21,6 +21,7 @@ function Setup() {
   const [wakeTime, setWakeTime] = useState("07:00");
   const [studyTopic, setStudyTopic] = useState("");
   const [fitnessGoal, setFitnessGoal] = useState<FitnessGoal>("maintain");
+  const [interests, setInterests] = useState("");
 
   useEffect(() => {
     const s = loadSetup();
@@ -28,11 +29,12 @@ function Setup() {
       setWakeTime(s.wakeTime);
       setStudyTopic(s.studyTopic);
       setFitnessGoal(s.fitnessGoal);
+      setInterests(s.interests || "");
     }
   }, []);
 
   const submit = () => {
-    saveSetup({ wakeTime, studyTopic, fitnessGoal });
+    saveSetup({ wakeTime, studyTopic, fitnessGoal, interests });
     navigate({ to: "/routine" });
   };
 
