@@ -80,7 +80,19 @@ function Setup() {
                 {FITNESS_LABELS[g]}
               </button>
             ))}
-          </div>
+        </div>
+
+        <div>
+          <Label htmlFor="interests" className="mb-2 block">What topics do you care about?</Label>
+          <Textarea
+            id="interests"
+            placeholder="e.g. AI research, climate tech, basketball, philosophy"
+            value={interests}
+            onChange={(e) => setInterests(e.target.value)}
+            className="rounded-xl resize-none"
+            rows={2}
+          />
+          <p className="text-xs text-muted-foreground mt-2">Used for your morning briefing.</p>
         </div>
       </div>
 
