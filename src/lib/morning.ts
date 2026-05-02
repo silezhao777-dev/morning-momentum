@@ -4,8 +4,9 @@ export type FitnessGoal = "fat_loss" | "muscle_gain" | "maintain" | "low_energy"
 export type Energy = "good" | "okay" | "tired";
 
 export interface RoutineSetup {
-  wakeTime: string;
   studyTopic: string;
+  studyMaterial?: string; // text extracted from uploaded PDF
+  studyMaterialName?: string;
   fitnessGoal: FitnessGoal;
   interests: string;
 }
@@ -18,7 +19,7 @@ export function loadSetup(): RoutineSetup | null {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
-    return { interests: "", ...parsed };
+    return { interests: "", studyMaterial: "", studyMaterialName: "", ...parsed };
   } catch {
     return null;
   }
