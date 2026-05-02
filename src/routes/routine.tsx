@@ -68,11 +68,18 @@ function Routine() {
   if (!setup) return null;
 
   const next = () => setStep((s) => Math.min(s + 1, TOTAL + 1));
+  const back = () => {
+    if (step <= 1) {
+      navigate({ to: "/setup" });
+      return;
+    }
+    setStep((s) => Math.max(s - 1, 1));
+  };
 
   /* ----- Step 1: Wake-up ----- */
   if (step === 1) {
     return (
-      <StepShell step={1} total={TOTAL} eyebrow="Step 1 · Wake-up" title="Get out of bed.">
+      <StepShell step={1} total={TOTAL} eyebrow="Step 1 · Wake-up" title="Get out of bed." onBack={back}>
         <div className="flex-1 flex flex-col items-center justify-center text-center">
           <div className="w-24 h-24 rounded-full bg-[var(--color-sun)]/30 flex items-center justify-center mb-8" style={{ boxShadow: "var(--shadow-glow)" }}>
             <Sunrise className="w-12 h-12 text-primary" />
@@ -91,7 +98,7 @@ function Routine() {
   /* ----- Step 2: Physical ----- */
   if (step === 2) {
     return (
-      <StepShell step={2} total={TOTAL} eyebrow="Step 2 · Move" title="How's your energy?">
+      <StepShell step={2} total={TOTAL} eyebrow="Step 2 · Move" title="How's your energy?" onBack={() => { if (energy) { setEnergy(null); } else { back(); } }}>
         {!energy ? (
           <div className="space-y-3">
             {(["good", "okay", "tired"] as Energy[]).map((e) => (
@@ -127,7 +134,7 @@ function Routine() {
   /* ----- Step 3: Study review ----- */
   if (step === 3) {
     return (
-      <StepShell step={3} total={TOTAL} eyebrow="Step 3 · Review" title="Lock in yesterday's learning.">
+      <StepShell step={3} total={TOTAL} eyebrow="Step 3 · Review" title="Lock in yesterday's learning." onBack={back}>
         <div className="space-y-4 flex-1">
           {!review ? (
             <Loading label="Generating your questions..." />
@@ -175,7 +182,7 @@ function Routine() {
   /* ----- Step 4: Breakfast ----- */
   if (step === 4) {
     return (
-      <StepShell step={4} total={TOTAL} eyebrow="Step 4 · Fuel" title="Pick your breakfast.">
+      <StepShell step={4} total={TOTAL} eyebrow="Step 4 · Fuel" title="Pick your breakfast." onBack={back}>
         <div className="space-y-3 flex-1">
           {breakfast.map((b, i) => (
             <div key={i} className="rounded-3xl bg-card border border-border p-5 shadow-[var(--shadow-soft)]">
@@ -206,7 +213,7 @@ function Routine() {
   /* ----- Step 5: Briefing ----- */
   if (step === 5) {
     return (
-      <StepShell step={5} total={TOTAL} eyebrow="Step 5 · Briefing" title="The world, in 3 minutes.">
+      <StepShell step={5} total={TOTAL} eyebrow="Step 5 · Briefing" title="The world, in 3 minutes." onBack={back}>
         <div className="space-y-3 flex-1">
           {!briefing ? (
             <Loading label="Curating your briefing..." />
@@ -244,7 +251,7 @@ function Routine() {
   /* ----- Step 6: Daily focus ----- */
   if (step === 6) {
     return (
-      <StepShell step={6} total={TOTAL} eyebrow="Step 6 · Focus" title="Today's priority.">
+      <StepShell step={6} total={TOTAL} eyebrow="Step 6 · Focus" title="Today's priority." onBack={back}>
         <div className="flex-1 flex flex-col justify-center">
           {!focus ? (
             <Loading label="Crafting today's focus..." />
