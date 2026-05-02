@@ -57,7 +57,7 @@ function Routine() {
     }
     setSetup(s);
     // Kick off all AI calls in parallel as soon as the routine loads.
-    generateStudyReview(s.studyTopic).then(setReview).catch(console.error);
+    generateStudyReview(s.studyTopic, s.studyMaterial).then(setReview).catch(console.error);
     generateBriefing(s.interests).then(setBriefing).catch(console.error);
     generateFocus(s).then(setFocus).catch(console.error);
   }, [navigate]);
