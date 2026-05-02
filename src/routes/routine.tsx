@@ -48,8 +48,11 @@ function Routine() {
   const [review, setReview] = useState<StudyReview | null>(null);
   const [briefing, setBriefing] = useState<Briefing | null>(null);
   const [focus, setFocus] = useState<string | null>(null);
+  const startedRef = useRef(false);
 
   useEffect(() => {
+    if (startedRef.current) return; // guard StrictMode double-invoke
+    startedRef.current = true;
     const s = loadSetup();
     if (!s) {
       navigate({ to: "/setup" });
