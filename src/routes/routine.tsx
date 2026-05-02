@@ -98,7 +98,7 @@ function Routine() {
   /* ----- Step 2: Physical ----- */
   if (step === 2) {
     return (
-      <StepShell step={2} total={TOTAL} eyebrow="Step 2 · Move" title="How's your energy?">
+      <StepShell step={2} total={TOTAL} eyebrow="Step 2 · Move" title="How's your energy?" onBack={() => { if (energy) { setEnergy(null); } else { back(); } }}>
         {!energy ? (
           <div className="space-y-3">
             {(["good", "okay", "tired"] as Energy[]).map((e) => (
