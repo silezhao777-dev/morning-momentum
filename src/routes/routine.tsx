@@ -134,7 +134,7 @@ function Routine() {
   /* ----- Step 3: Study review ----- */
   if (step === 3) {
     return (
-      <StepShell step={3} total={TOTAL} eyebrow="Step 3 · Review" title="Lock in yesterday's learning.">
+      <StepShell step={3} total={TOTAL} eyebrow="Step 3 · Review" title="Lock in yesterday's learning." onBack={back}>
         <div className="space-y-4 flex-1">
           {!review ? (
             <Loading label="Generating your questions..." />
